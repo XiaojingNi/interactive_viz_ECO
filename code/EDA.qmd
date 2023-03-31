@@ -10,6 +10,8 @@ format:
         code-line-numbers: true
         toc: true
         toc-depth: 4
+        link-external-icon: true
+        link-external-newwindow: true
 ---
 # Plot data
 Load 04 household to explore. 
@@ -153,10 +155,10 @@ The concept of three-phase smart meter is explained [here](https://www.sms-plc.c
 ## plug 04 household
 # SMART METER DATA
 # ----------------
-# 
+#
 # Measurement period:
 # 27.06.12 to 31.01.13
-# 
+#
 # Coverage:
 # No. days: 219, Coverage: 99.39%
 
@@ -174,15 +176,15 @@ file_list <-
 for (file in file_list) {
   path <- paste0("../../eco/04_sm/", file)
   
-  for (phase in 0:3){
+  for (phase in 0:3) {
     # if the merged dataset doesn't exist, create it
     
     ## initiate variable name for each phase
-    df_phase <- paste0("s04_",phase)
+    df_phase <- paste0("s04_", phase)
     
     if (!exists(df_phase)) {
       temp <- read.csv(path, header = FALSE)
-      temp <- data.frame(temp[,phase+1])
+      temp <- data.frame(temp[, phase + 1])
       colnames(temp) <- substr(file, 1, 10)
       assign(df_phase, temp)
       rm(temp)
@@ -191,7 +193,7 @@ for (file in file_list) {
     # if the merged dataset does exist, append to it
     if (exists(df_phase)) {
       temp_dataset <- read.csv(path, header = FALSE)
-      temp_dataset <- data.frame(temp_dataset[,phase+1])
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
       colnames(temp_dataset) <- substr(file, 1, 10)
       temp <- cbind(get(df_phase), temp_dataset)
       assign(df_phase, temp)
@@ -204,3 +206,90 @@ for (file in file_list) {
 
 Reading the data cost several minutes. This indicate that the data need to be aggregate or processed in some way. 
 
+Plot 2012-06-27 for all phases. 
+```{r}
+
+par(mar=c(2.5,2.5,1,1))
+
+layout(matrix(c(1,2,3,4,5),ncol=1),heights=c(2,2,2,2,2))
+
+plot.new()
+text(0.5,0.5,"04 Smart meter power on 2012-06-27")
+plot(s04_0$`2012-06-27`, type = "l", main = "All phase", col ="red")
+plot(s04_1$`2012-06-27`, type = "l", main = "Phase 1",col ="blue")
+plot(s04_2$`2012-06-27`, type = "l", main = "Phase 2",col ="green")
+plot(s04_3$`2012-06-27`, type = "l", main = "Phase 3",col ="black")
+```
+Compare for a different household.
+
+```{r}
+## read data
+
+## plug 05 household
+
+# SMART METER DATA
+# ----------------
+# 
+# Measurement period:
+# 27.06.12 to 31.01.13
+# 
+# Coverage:
+# No. days: 215, Coverage: 99.05%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/05_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/05_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s05_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+```
+
+Plot 2012-06-27 for all phases for 05 household. 
+```{r}
+
+par(mar=c(2.5,2.5,1,1))
+
+layout(matrix(c(1,2,3,4,5),ncol=1),heights=c(2,2,2,2,2))
+
+plot.new()
+text(0.5,0.5,"04 Smart meter power on 2012-06-27")
+plot(s05_0$`2012-06-27`, type = "l", main = "All phase", col ="red")
+plot(s05_1$`2012-06-27`, type = "l", main = "Phase 1",col ="blue")
+plot(s05_2$`2012-06-27`, type = "l", main = "Phase 2",col ="green")
+plot(s05_3$`2012-06-27`, type = "l", main = "Phase 3",col ="black")
+```
+The patterns are obviously different from household 04. 
