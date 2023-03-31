@@ -1,0 +1,206 @@
+---
+title: "EDA"
+author: "Xiaojing Ni"
+format:
+    html:
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-fold: true
+        code-line-numbers: true
+        toc: true
+        toc-depth: 4
+---
+# Plot data
+Load 04 household to explore. 
+```{r}
+## read data
+
+## plug 04 household
+## Measurement period:
+## 27.06.12 to 23.01.13
+
+## 01: Fridge (no. days: 194, coverage: 97.01%)
+## 02: Kitchen appliances (no. days: 194, coverage: 96.81%) (*)
+## 03: Lamp (no. days: 170, coverage: 93.54%) (**)
+## 04: Stereo and laptop (no. days: 169, coverage: 90.98%)
+## 05: Freezer (no. days: 192, coverage: 93.08%)
+## 06: Tablet (no. days: 189, coverage: 93.6%)
+## 07: Entertainment (no. days: 186, coverage: 94.69%) (***)
+## 08: Microwave (no. days: 194, coverage: 97.08%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/04_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p04_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/04_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+The plug data for 04 household solely took 1G ram, ~1 mins to read. This indicate that the data is needed to be aggregated in some way to plot. 
+
+Plot 04 household Fridge data on 2012-06-27 as example. There is not much information from the plot. 
+```{r}
+# sample plot
+plot(p04_01$`2012-06-27`, type = "l", main = "Fridge plug data on 2012-06-27")
+```
+To compare, next to plot Lamp data on 2012-06-27. 
+```{r}
+# sample plot
+plot(p04_02$`2012-06-27`, type = "l", main = "Lamp plug data on 2012-06-27")
+```
+There is clear difference in the pattern of different appliance. 
+
+Load 05 household to explore to see if there is any difference or similarity. 
+```{r}
+## read data
+
+## plug 05 household
+# Measurement period:
+# 27.06.12 to 31.01.13
+#
+# 01: Tablet (no. days: 218, coverage: 97.87%)
+# 02: Coffee machine (no. days: 218, coverage: 95.16%)
+# 03: Fountain (no. days: 71, coverage: 99.43%) (*)
+# 04: Microwave (no. days: 218, coverage: 97.87%)
+# 05: Fridge (no. days: 218, coverage: 97.87%)
+# 06: Entertainment (no. days: 192, coverage: 89.14%) (**)
+# 07: PC (no. days: 218, coverage: 97.87%) (***)
+# 08: Kettle (no. days: 25, coverage: 76.64%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/05_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p05_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/05_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+
+Plot 05 household Fridge data on 2012-06-27 as same as 04 household. The difference is obvious. 
+```{r}
+# sample plot
+plot(p05_01$`2012-06-27`, type = "l", main = "Fridge plug data on 2012-06-27")
+```
+
+Plot Lamp data on 2012-06-27 for 05 household. 
+```{r}
+# sample plot
+plot(p05_02$`2012-06-27`, type = "l", main = "Lamp plug data on 2012-06-27")
+```
+
+# Smart meter data
+
+The concept of three-phase smart meter is explained [here](https://www.sms-plc.com/insights/what-does-the-3-phase-smart-meter-mean-for-the-smart-energy-revolution/). We are going to look at the total and each phase power. 
+
+```{r}
+## read data
+
+## plug 04 household
+# SMART METER DATA
+# ----------------
+# 
+# Measurement period:
+# 27.06.12 to 31.01.13
+# 
+# Coverage:
+# No. days: 219, Coverage: 99.39%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/04_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/04_sm/", file)
+  
+  for (phase in 0:3){
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s04_",phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[,phase+1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[,phase+1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+```
+
+Reading the data cost several minutes. This indicate that the data need to be aggregate or processed in some way. 
+
