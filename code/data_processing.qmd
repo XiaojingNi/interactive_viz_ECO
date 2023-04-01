@@ -13,7 +13,10 @@ format:
         link-external-icon: true
         link-external-newwindow: true
 ---
-
+```{r echo=FALSE}
+#| echo: FALSE
+library(dplyr)
+```
 
 # Plot data
 ## Daily average consumption by household
@@ -190,18 +193,28 @@ for (household in households) {
   }
 }
 ```
-3. Compute daily consumption by each household and each appliance. 
+3. Compute daily average hourly consumption by each household and each appliance. 
 ```{r}
 
 daily_consum <- function(household) {
+  
+  # create empty df for res
+  daily_power <- data.frame(matrix(ncol = 5, nrow = 0))
+
+  #provide column names
+  colnames(daily_power) <- c('household', 'daily_avg', 'appliance','hour','hour_avg')
+
+  
   for (a in appliance) {
     if (household != "06") {
       df <- get(paste0("p", household, "_", a))
+      
+      ## compute hourly average through out all the days having data
       hour_avg <-
         rowMeans(aggregate(
           df,
           list(rep(
-            1:(nrow(p04_01) %/% 3600 + 1),
+            1:(nrow(df) %/% 3600 + 1),
             each = 3600,
             len = nrow(df)
           )),
@@ -209,51 +222,72 @@ daily_consum <- function(household) {
           na.rm = TRUE,
           na.action = NULL
         )[-1])
-      daily_avg <- mean(colMeans(df))
       
-      daily_power <- data.frame(
+      
+      
+      curr_a_power <- data.frame(
         household = rep(household, 24),
         daily_avg = rep(daily_avg, 24),
-        appliance = rep(appliance, 24),
+        appliance = rep(a, 24),
         hour = seq.int(24),
         hour_avg = hour_avg
       )
     }
-  else {
-    if (a != "08") {
-    df <- get(paste0("p", household, "_", a))
-      hour_avg <-
-        rowMeans(aggregate(
-          df,
-          list(rep(
-            1:(nrow(p04_01) %/% 3600 + 1),
-            each = 3600,
-            len = nrow(df)
-          )),
-          sum,
-          na.rm = TRUE,
-          na.action = NULL
-        )[-1])
-      daily_avg <- mean(colMeans(df))
-      
-      daily_power <- data.frame(
-        household = rep(household, 24),
-        daily_avg = rep(daily_avg, 24),
-        appliance = rep(appliance[1:7], 24),
-        hour = seq.int(24),
-        hour_avg = hour_avg
-      )
-    
-  }}}
-      return(daily_power)
+    else {
+      if (a != "08") {
+        df <- get(paste0("p", household, "_", a))
+        hour_avg <-
+          rowMeans(aggregate(
+            df,
+            list(rep(
+              1:(nrow(df) %/% 3600 + 1),
+              each = 3600,
+              len = nrow(df)
+            )),
+            sum,
+            na.rm = TRUE,
+            na.action = NULL
+          )[-1])
+        
+        
+        curr_a_power <- data.frame(
+          household = rep(household, 24),
+          daily_avg = rep(daily_avg, 24),
+          appliance = rep(a, 24),
+          hour = seq.int(24),
+          hour_avg = hour_avg
+        )
+        
+      }
+      else {return(daily_power)}
+    }
+  
+  daily_power <- rbind(daily_power, curr_a_power)
+  
+  }
+  return(daily_power)
 }
 
 daily_power <-
   bind_rows(lapply(households, daily_consum), .id = "column_label")
 
 ```
+4. Daily total of each household
+```{r}
+
+      daily_avg <-
+        colSums(aggregate(df, list(rep(
+          1:(nrow(s04_0) %/% 3600 + 1),
+          each = 1800,
+          len = nrow(df)
+        )), sum,
+          na.rm = TRUE,
+          na.action = NULL)[-1])
+```
 4. Save the data
 ```{r}
+write.csv(daily_power, "../data/daily_consum.csv", row.names=FALSE)
+
 ```
 # Smart meter data
 
@@ -432,9 +466,46 @@ for (household in households) {
   }
 }
 ```
+3. Compute semi-hourly consumption for each phase, kwh
+```{r}
 
-2. Compute hourly/semi-hourly consumption for each phase, kwh
+semihour_consum <- function(household) {
+  for (phase in 0:3) {
+      df <- get(paste0("s", household, "_", phase))
+      
+      semihour_avg <-
+        rowSums(aggregate(df, list(rep(
+          1:(nrow(df) %/% 1800 + 1),
+          each = 1800,
+          len = nrow(df)
+        )), sum,
+          na.rm = TRUE,
+          na.action = NULL)[-1]) / 3600000
+      
+      semihr_power <- data.frame(
+        household = rep(household, 48),
+        phase = rep(0:3, each=48),
+        semihr = semihour_avg,
+        hour = seq(0,23.5,0.5)
+      )
+    
+  }
+  return(semihr_power)
+}
+
+semi_comsum <-
+  bind_rows(lapply(households, semihour_consum), .id = "column_label")
+
+```
+4. Save the data
+```{r}
+write.csv(daily_power, "../data/daily_consum.csv", row.names=FALSE)
+
+```
+2. 
 ```{r}
 df <- data.frame(c("household","total","phase1","phase2","phase3"))
-hour_avg <- colSums(aggregate(s04_0, list(rep(1:(nrow(s04_0) %/% 3600 + 1), each = 3600, len = nrow(p04_01))), sum)[-1])/3600000
+hour_avg <- colSums(aggregate(s04_0, list(rep(1:(nrow(s04_0) %/% 1800 + 1), each = 1800, len = nrow(p04_01))), sum,
+          na.rm = TRUE,
+          na.action = NULL)[-1])/3600000
 ```
