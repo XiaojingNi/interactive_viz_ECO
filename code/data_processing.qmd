@@ -55,6 +55,7 @@ for (a in appliance) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_name, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -105,6 +106,7 @@ for (a in appliance) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_name, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -157,6 +159,7 @@ for (a in appliance) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_name, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -170,29 +173,46 @@ for (a in appliance) {
   }
 }
 ```
+2. Replace negative values (missing values) as NA
+```{r}
+households <- c("04", "05", "06")
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
 
-2. Compute daily consumption by each household and each appliance.
+for (household in households) {
+  for (a in appliance) {
+    if (household != "06" && a != "08") {
+      df <- get(paste0("p", household, "_", a))
+      df <- replace(df, df < 0, NA)
+    }
+    
+  }
+}
+```
+3. Compute daily consumption by each household and each appliance. Make a tidy dataframe.
 ```{r}
 ## create daily consumption df
 daily_power <- data.frame(c("household","daily_avg","appliance","hour","hour_avg"))
-households <- c("04","05","06")
-appliance <- c("01","02","03","04","05","06","07","08")
+
 
 # compute hourly consumption
 for (household in households){
   df <- get(paste0("p",household))
-  colMeans(matrix(data$Value, nrow=20))
+  hour_avg <- rowMeans(aggregate(p04_01, list(rep(1:(nrow(p04_01) %/% 3600 + 1), each = 3600, len = nrow(p04_01))), mean)[-1])
+  daily_avg <- mean(colMeans(p04_01))
+  
+  
 }
 ```
 
 # Smart meter data
 
-The concept of three-phase smart meter is explained [here](https://www.sms-plc.com/insights/what-does-the-3-phase-smart-meter-mean-for-the-smart-energy-revolution/). We are going to look at the total and each phase power. 
+## Hourly total consumption (watt * time) for different phase
 
+1. Read data
 ```{r}
 ## read data
 
-## plug 04 household
+## 04 household
 # SMART METER DATA
 # ----------------
 #
@@ -228,6 +248,7 @@ for (file in file_list) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_phase, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -242,30 +263,7 @@ for (file in file_list) {
   }
 }
 
-```
-
-Reading the data cost several minutes. This indicate that the data need to be aggregate or processed in some way. 
-
-Plot 2012-06-27 for all phases. 
-```{r}
-
-par(mar=c(2.5,2.5,1,1))
-
-layout(matrix(c(1,2,3,4,5),ncol=1),heights=c(2,2,2,2,2))
-
-plot.new()
-text(0.5,0.5,"04 Smart meter power on 2012-06-27")
-plot(s04_0$`2012-06-27`, type = "l", main = "All phase", col ="red")
-plot(s04_1$`2012-06-27`, type = "l", main = "Phase 1",col ="blue")
-plot(s04_2$`2012-06-27`, type = "l", main = "Phase 2",col ="green")
-plot(s04_3$`2012-06-27`, type = "l", main = "Phase 3",col ="black")
-```
-Compare for a different household.
-
-```{r}
-## read data
-
-## plug 05 household
+## 05 household
 
 # SMART METER DATA
 # ----------------
@@ -302,6 +300,7 @@ for (file in file_list) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_phase, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -316,4 +315,74 @@ for (file in file_list) {
   }
 }
 
+## 06 household
+
+# SMART METER DATA
+# ----------------
+# 
+# Measurement period:
+# 27.06.12 to 31.01.13
+# 
+# Coverage:
+# No. days: 166, Coverage: 99.67%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/06_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/06_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s06_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+
+2. Replace negative values (missing values) as NA
+```{r}
+households <- c("04", "05", "06")
+
+for (household in households) {
+  for (phase in 0:3) {
+    df <- get(paste0("s", household, "_", phase))
+    df <- replace(df, df < 0, NA)
+    
+  }
+}
+```
+
+2. Compute hourly/semi-hourly consumption for each phase
+```{r}
+df <- data.frame(c("household","total","phase1","phase2","phase3"))
+hour_avg <- colMeans(aggregate(s04_0, list(rep(1:(nrow(s04_0) %/% 3600 + 1), each = 3600, len = nrow(p04_01))), sum)[-1])/3600000
 ```

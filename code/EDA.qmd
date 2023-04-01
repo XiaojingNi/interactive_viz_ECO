@@ -53,6 +53,7 @@ for (a in appliance) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_name, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -119,6 +120,7 @@ for (a in appliance) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_name, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -188,6 +190,7 @@ for (file in file_list) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_phase, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
@@ -262,6 +265,7 @@ for (file in file_list) {
       colnames(temp) <- substr(file, 1, 10)
       assign(df_phase, temp)
       rm(temp)
+      next
     }
     
     # if the merged dataset does exist, append to it
