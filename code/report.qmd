@@ -1,0 +1,28 @@
+---
+title: "Report"
+author: "Xiaojing Ni"
+format:
+    html:
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-fold: true
+        code-line-numbers: true
+        toc: true
+        toc-depth: 4
+        link-external-icon: true
+        link-external-newwindow: true
+---
+### Data section
+: Briefly describe the data and which portions are most relevant for your questions.
+### Data-science questions
+: Introduce the question(s) you're trying to answer with each visualization. We will consider the nature of the questions and whether you're successful in answering them through your visualizations
+### Data preparation and EDA
+
+: Include any code (with code-folding) used to transform the data to meet your needs. Also, include narration to describe what you are doing and why.
+### Results section
+A rationale for your design decisions. How did you choose your particular visual encodings, interaction, and animation techniques? What alternatives did you consider and how did you arrive at your ultimate choices?
+### Visualizations
+: Include the final products for your visualizations
+### References
+: Remember to acknowledge all appropriate sources not just in your write-up but also directly on your visualization itself (including the source of your data, and any example visualization you drew inspiration from).
