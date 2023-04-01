@@ -221,7 +221,7 @@ daily_consum <- function(household) {
           sum,
           na.rm = TRUE,
           na.action = NULL
-        )[-1])
+        )[-1]/ 3600000)
       
       
       
@@ -247,7 +247,7 @@ daily_consum <- function(household) {
             sum,
             na.rm = TRUE,
             na.action = NULL
-          )[-1])
+          )[-1]/ 3600000)
         
         
         curr_a_power <- data.frame(
@@ -272,17 +272,13 @@ daily_power <-
   bind_rows(lapply(households, daily_consum), .id = "column_label")
 
 ```
-4. Daily total of each household
+4. Daily total by 8 appliances of each household 
 ```{r}
+daily_total_app <- daily_power %>% group_by(household) %>% 
+  summarise(sum_app=sum(hour_avg),
+            .groups = 'drop')
 
-      daily_avg <-
-        colSums(aggregate(df, list(rep(
-          1:(nrow(s04_0) %/% 3600 + 1),
-          each = 1800,
-          len = nrow(df)
-        )), sum,
-          na.rm = TRUE,
-          na.action = NULL)[-1])
+daily_power$daily_avg <- daily_total_app$sum_app[match(unlist(daily_power$household), daily_total_app$household)]
 ```
 4. Save the data
 ```{r}
