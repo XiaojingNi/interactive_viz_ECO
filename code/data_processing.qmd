@@ -520,6 +520,12 @@ write.csv(semi_comsum, "../data/semihour_phase.csv", row.names=FALSE)
 
 ten_min_day <- function(household) {
   
+  # create empty df for res
+  res <- data.frame(matrix(ncol = 5, nrow = 0))
+
+  #provide column names
+  colnames(res) <- c('household', 'phase', 'value','date','time')
+  
   for (phase in 0:3) {
     
       df <- get(paste0("s", household, "_", phase))
@@ -547,10 +553,13 @@ ten_min_day <- function(household) {
       ten_d_long <- melt(setDT(ten_d), id.vars = "time", variable.name = "date")
       
       ten_d_long$household <- rep(household, 4032)
+      ten_d_long$phase <- rep(phase, 4032)
       
+      res <- rbind(ten_d_long,res)
   }
-  
-  return(ten_d_long)
+    
+    
+    return(res)
 }
 
 ten_min_day <-
@@ -559,6 +568,6 @@ ten_min_day <-
 
 Save the data
 ```{r}
-write.csv(ten_min_day[,2:5], "../data/ten_min_day.csv", row.names=FALSE)
+write.csv(ten_min_day[,2:6], "../data/ten_min_day.csv", row.names=FALSE)
 
 ```
