@@ -16,6 +16,7 @@ format:
 ```{r echo=FALSE}
 #| echo: FALSE
 library(dplyr)
+library(data.table)
 ```
 
 # Plot data
@@ -462,31 +463,46 @@ for (household in households) {
   }
 }
 ```
-3. Compute semi-hourly consumption for each phase, kwh
+3. Compute 10min total consumption for each phase, kwh
 ```{r}
 
 semihour_consum <- function(household) {
+  # create empty df for res
+  semihour <- data.frame(matrix(ncol = 3, nrow = 0))
+
+  #provide column names
+  colnames(semihour) <- c('household', 'phase', 'semihour_total')
+  
   for (phase in 0:3) {
+    
       df <- get(paste0("s", household, "_", phase))
       
-      semihour_avg <-
-        rowSums(aggregate(df, list(rep(
-          1:(nrow(df) %/% 1800 + 1),
-          each = 1800,
-          len = nrow(df)
-        )), sum,
-          na.rm = TRUE,
-          na.action = NULL)[-1]) / 3600000
+      # daily_total <-
+      #   colSums(df,
+      #     na.rm = TRUE) / 3600000
       
-      semihr_power <- data.frame(
-        household = rep(household, 48),
-        phase = rep(0:3, each=48),
-        semihr = semihour_avg,
-        hour = seq(0,23.5,0.5)
+      semihour_t <-
+        rowMeans(aggregate(
+          df,
+          list(rep(
+            1:(nrow(df) %/% 600 + 1),
+            each = 600,
+            len = nrow(df)
+          )),
+          sum,
+          na.rm = TRUE,
+          na.action = NULL
+        )[-1]/ 3600000)
+      
+      curr_consum <- data.frame(
+        household = rep(household, 144),
+        phase = rep(phase, 144),
+        semihour_total = semihour_t
       )
-    
+      semihour <- rbind(semihour, curr_consum)
   }
-  return(semihr_power)
+  
+  return(semihour)
 }
 
 semi_comsum <-
@@ -495,13 +511,54 @@ semi_comsum <-
 ```
 4. Save the data
 ```{r}
-write.csv(daily_power, "../data/daily_consum.csv", row.names=FALSE)
+write.csv(semi_comsum, "../data/semihour_phase.csv", row.names=FALSE)
 
 ```
-2. 
+# Plotly data
 ```{r}
-df <- data.frame(c("household","total","phase1","phase2","phase3"))
-hour_avg <- colSums(aggregate(s04_0, list(rep(1:(nrow(s04_0) %/% 1800 + 1), each = 1800, len = nrow(p04_01))), sum,
+## using smart meter data, the first 4 weeks of data
+
+ten_min_day <- function(household) {
+  
+  for (phase in 0:3) {
+    
+      df <- get(paste0("s", household, "_", phase))
+      df <- df[,1:28]
+      
+      # daily_total <-
+      #   colSums(df,
+      #     na.rm = TRUE) / 3600000
+      
+      ten_d <- aggregate(
+          df,
+          list(rep(
+            1:(nrow(df) %/% 600 + 1),
+            each = 600,
+            len = nrow(df)
+          )),
+          sum,
           na.rm = TRUE,
-          na.action = NULL)[-1])/3600000
+          na.action = NULL
+        )[-1]/ 3600000
+      ten_d$time <- format( seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date()+1), by = "10 min"),
+          "%H:%M", tz="GMT")[1:144]
+      
+      ## convert ten_d to long format
+      ten_d_long <- melt(setDT(ten_d), id.vars = "time", variable.name = "date")
+      
+      ten_d_long$household <- rep(household, 4032)
+      
+  }
+  
+  return(ten_d_long)
+}
+
+ten_min_day <-
+  bind_rows(lapply(households, ten_min_day), .id = "column_label")
+```
+
+Save the data
+```{r}
+write.csv(ten_min_day[,2:5], "../data/ten_min_day.csv", row.names=FALSE)
+
 ```
