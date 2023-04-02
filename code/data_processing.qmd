@@ -516,7 +516,7 @@ write.csv(semi_comsum, "../data/semihour_phase.csv", row.names=FALSE)
 ```
 # Plotly data
 ```{r}
-## using smart meter data, the first 4 weeks of data
+## using smart meter data, the first 2 weeks of data
 
 ten_min_day <- function(household) {
   
@@ -529,7 +529,7 @@ ten_min_day <- function(household) {
   for (phase in 0:3) {
     
       df <- get(paste0("s", household, "_", phase))
-      df <- df[,1:28]
+      df <- df[,1:14]
       
       # daily_total <-
       #   colSums(df,
@@ -552,8 +552,8 @@ ten_min_day <- function(household) {
       ## convert ten_d to long format
       ten_d_long <- melt(setDT(ten_d), id.vars = "time", variable.name = "date")
       
-      ten_d_long$household <- rep(household, 4032)
-      ten_d_long$phase <- rep(phase, 4032)
+      ten_d_long$household <- rep(household, 2016)
+      ten_d_long$phase <- rep(phase, 2016)
       
       res <- rbind(ten_d_long,res)
   }
