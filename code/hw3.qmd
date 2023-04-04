@@ -1,0 +1,1231 @@
+---
+title: "Report"
+author: "Xiaojing Ni"
+format:
+    html:
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-fold: true
+        code-line-numbers: true
+        toc: true
+        toc-depth: 5
+        link-external-icon: true
+        link-external-newwindow: true
+        bibliography: bibliography.bib
+---
+### Data section
+
+The data in this report is the Electricity Consumption and Occupancy (ECO) dataset (@Beckel2014, @Kleiminger2015). This dataset contains two parts: plug data and smart meter data. The plug data describes the energy consumption by second for each day by various appliances. The smart meter data is the energy consumption measured by three-phase smart meter for entire household. There are three households in the dataset: 04, 05, and 06. This report will show the household usage similarity and differences over a day, including the total usage and by different appliances. Thus, the households and their related total and average usage by hour from both plug data and smart meter data will be used in this report. 
+
+More specifically, the plug dataset is used to calculate the average 10-minutes usage for the first 14 days in the dataset. The usage from different household and different phase is recorded. The smart meter dataset is used to obtain the hourly usage averaged by all date in the dataset grouping by households and appliances. 
+
+### Data-science questions
+
+The main question is household usages similarity and differences over a day. This report is a demonstration to show how usage can be similar or different by households. If there are large scale household data, this will help to understand the overall usage pattern, so that utility provider can make plans for the adjustment when necessary, i.e. utility distribution during the peak hour. 
+
+More specific questions related to the individual visualizations are described as follow. 
+<ul>
+<li> How similar/difference is the average usage distributed by time for different households? For example, is there any peak time that usage from all households are high? 
+<li> How similar/difference is the average usage by appliances by different households throughout the day? 
+
+### Data preparation and EDA
+
+#### EDA
+
+This session performs Exploratory Data Analysis (EDA) with necessary data preparation. 
+
+##### Plug data
+Load 04 household to explore. 
+```{r}
+## read data
+
+## plug 04 household
+## Measurement period:
+## 27.06.12 to 23.01.13
+
+## 01: Fridge (no. days: 194, coverage: 97.01%)
+## 02: Kitchen appliances (no. days: 194, coverage: 96.81%) (*)
+## 03: Lamp (no. days: 170, coverage: 93.54%) (**)
+## 04: Stereo and laptop (no. days: 169, coverage: 90.98%)
+## 05: Freezer (no. days: 192, coverage: 93.08%)
+## 06: Tablet (no. days: 189, coverage: 93.6%)
+## 07: Entertainment (no. days: 186, coverage: 94.69%) (***)
+## 08: Microwave (no. days: 194, coverage: 97.08%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/04_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p04_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/04_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+The plug data for 04 household solely took 1G ram, ~1 mins to read. This indicate that the data is needed to be aggregated in some way to plot. 
+
+Plot 04 household Fridge data on 2012-06-27 as example. There is not much information from the plot. 
+```{r}
+# sample plot
+plot(p04_01$`2012-06-27`, type = "l", main = "Fridge plug data on 2012-06-27")
+```
+To compare, next to plot Lamp data on 2012-06-27. 
+```{r}
+# sample plot
+plot(p04_02$`2012-06-27`, type = "l", main = "Lamp plug data on 2012-06-27")
+```
+There is clear difference in the pattern of different appliance. 
+
+Load 05 household to explore to see if there is any difference or similarity. 
+```{r}
+## read data
+
+## plug 05 household
+# Measurement period:
+# 27.06.12 to 31.01.13
+#
+# 01: Tablet (no. days: 218, coverage: 97.87%)
+# 02: Coffee machine (no. days: 218, coverage: 95.16%)
+# 03: Fountain (no. days: 71, coverage: 99.43%) (*)
+# 04: Microwave (no. days: 218, coverage: 97.87%)
+# 05: Fridge (no. days: 218, coverage: 97.87%)
+# 06: Entertainment (no. days: 192, coverage: 89.14%) (**)
+# 07: PC (no. days: 218, coverage: 97.87%) (***)
+# 08: Kettle (no. days: 25, coverage: 76.64%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/05_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p05_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/05_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+
+Plot 05 household Fridge data on 2012-06-27 as same as 04 household. The difference is obvious. 
+```{r}
+# sample plot
+plot(p05_01$`2012-06-27`, type = "l", main = "Fridge plug data on 2012-06-27")
+```
+
+Plot Lamp data on 2012-06-27 for 05 household. 
+```{r}
+# sample plot
+plot(p05_02$`2012-06-27`, type = "l", main = "Lamp plug data on 2012-06-27")
+```
+
+##### Smart meter data
+
+The concept of three-phase smart meter is explained [here](https://www.sms-plc.com/insights/what-does-the-3-phase-smart-meter-mean-for-the-smart-energy-revolution/). We are going to look at the total and each phase power. 
+
+```{r}
+## read data
+
+## plug 04 household
+# SMART METER DATA
+# ----------------
+#
+# Measurement period:
+# 27.06.12 to 31.01.13
+#
+# Coverage:
+# No. days: 219, Coverage: 99.39%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/04_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/04_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s04_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+```
+
+Reading the data cost several minutes. This indicate that the data need to be aggregate or processed in some way. 
+
+Plot 2012-06-27 for all phases. 
+```{r}
+
+par(mar=c(2.5,2.5,1,1))
+
+layout(matrix(c(1,2,3,4,5),ncol=1),heights=c(2,2,2,2,2))
+
+plot.new()
+text(0.5,0.5,"04 Smart meter power on 2012-06-27")
+plot(s04_0$`2012-06-27`, type = "l", main = "All phase", col ="red")
+plot(s04_1$`2012-06-27`, type = "l", main = "Phase 1",col ="blue")
+plot(s04_2$`2012-06-27`, type = "l", main = "Phase 2",col ="green")
+plot(s04_3$`2012-06-27`, type = "l", main = "Phase 3",col ="black")
+```
+Compare for a different household.
+
+```{r}
+## read data
+
+## plug 05 household
+
+# SMART METER DATA
+# ----------------
+# 
+# Measurement period:
+# 27.06.12 to 31.01.13
+# 
+# Coverage:
+# No. days: 215, Coverage: 99.05%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/05_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/05_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s05_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+```
+
+Plot 2012-06-27 for all phases for 05 household. 
+```{r}
+
+par(mar=c(2.5,2.5,1,1))
+
+layout(matrix(c(1,2,3,4,5),ncol=1),heights=c(2,2,2,2,2))
+
+plot.new()
+text(0.5,0.5,"04 Smart meter power on 2012-06-27")
+plot(s05_0$`2012-06-27`, type = "l", main = "All phase", col ="red")
+plot(s05_1$`2012-06-27`, type = "l", main = "Phase 1",col ="blue")
+plot(s05_2$`2012-06-27`, type = "l", main = "Phase 2",col ="green")
+plot(s05_3$`2012-06-27`, type = "l", main = "Phase 3",col ="black")
+```
+
+#### Data preparation
+
+This session describes the data preparation for results analysis and visualization. 
+
+```{r echo=FALSE}
+#| echo: FALSE
+library(dplyr)
+library(data.table)
+```
+
+##### Plug data
+
+The steps and code below describe the preparation of daily average consumption by household data.
+
+1. Read data
+```{r}
+## read data
+
+## plug 04 household
+## Measurement period:
+## 27.06.12 to 23.01.13
+
+## 01: Fridge (no. days: 194, coverage: 97.01%)
+## 02: Kitchen appliances (no. days: 194, coverage: 96.81%) (*)
+## 03: Lamp (no. days: 170, coverage: 93.54%) (**)
+## 04: Stereo and laptop (no. days: 169, coverage: 90.98%)
+## 05: Freezer (no. days: 192, coverage: 93.08%)
+## 06: Tablet (no. days: 189, coverage: 93.6%)
+## 07: Entertainment (no. days: 186, coverage: 94.69%) (***)
+## 08: Microwave (no. days: 194, coverage: 97.08%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/04_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p04_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/04_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+## read data
+
+## plug 05 household
+# Measurement period:
+# 27.06.12 to 31.01.13
+#
+# 01: Tablet (no. days: 218, coverage: 97.87%)
+# 02: Coffee machine (no. days: 218, coverage: 95.16%)
+# 03: Fountain (no. days: 71, coverage: 99.43%) (*)
+# 04: Microwave (no. days: 218, coverage: 97.87%)
+# 05: Fridge (no. days: 218, coverage: 97.87%)
+# 06: Entertainment (no. days: 192, coverage: 89.14%) (**)
+# 07: PC (no. days: 218, coverage: 97.87%) (***)
+# 08: Kettle (no. days: 25, coverage: 76.64%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/05_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p05_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/05_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+## read data
+
+## plug 06 household
+# PLUG DATA
+# ---------
+#
+# Measurement period:
+# 27.06.12 to 31.01.13
+#
+# 01: Lamp (no. days: 166, coverage: 67.2%)
+# 02: Laptop (no. days: 185, coverage: 97.3%) (*)
+# 03: Router (no. days: 88, coverage: 96.73%) (**)
+# 04: Coffee machine (no. days: 179, coverage: 86.03%)
+# 05: Entertainment (no. days: 181, coverage: 95.86%) (***)
+# 06: Fridge (no. days: 179, coverage: 95.78%)
+# 07: Kettle (no. days: 147, coverage: 82.54%)
+
+appliance <- c("01", "02", "03", "04", "05", "06", "07")
+for (a in appliance) {
+  file_list <-
+    list.files(
+      path = paste0("../../eco/06_plug/", a),
+      pattern = ".csv",
+      all.files = FALSE,
+      full.names = FALSE
+    )
+  
+  ## initiate variable name for each applicance
+  df_name <- paste0("p06_", a)
+  
+  for (file in file_list) {
+    path <- paste0("../../eco/06_plug/", a, "/", file)
+    
+    # if the merged dataset doesn't exist, create it
+    if (!exists(df_name)) {
+      temp <- read.table(path, header = FALSE)
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_name, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_name)) {
+      temp_dataset <- read.table(path, header = FALSE)
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_name), temp_dataset)
+      assign(df_name, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+2. Replace negative values (missing values) as NA
+```{r}
+households <- c("04", "05", "06")
+appliance <- c("01", "02", "03", "04", "05", "06", "07", "08")
+
+for (household in households) {
+  for (a in appliance) {
+    if (!(household == "06" && a == "08")) {
+      df <- get(paste0("p", household, "_", a))
+      df <- replace(df, df < 0, NA)
+      assign(paste0("p", household, "_", a),df)
+    }
+    
+  }
+}
+```
+3. Compute daily average hourly consumption by each household and each appliance. 
+```{r}
+
+daily_consum <- function(household) {
+  
+  # create empty df for res
+  daily_power <- data.frame(matrix(ncol = 5, nrow = 0))
+
+  #provide column names
+  colnames(daily_power) <- c('household', 'daily_avg', 'appliance','hour','hour_avg')
+
+  
+  for (a in appliance) {
+    if (household != "06") {
+      df <- get(paste0("p", household, "_", a))
+      
+      ## compute hourly average through out all the days having data
+      hour_avg <-
+        rowMeans(aggregate(
+          df,
+          list(rep(
+            1:(nrow(df) %/% 3600 + 1),
+            each = 3600,
+            len = nrow(df)
+          )),
+          sum,
+          na.rm = TRUE,
+          na.action = NULL
+        )[-1]/ 3600000)
+      
+      
+      
+      curr_a_power <- data.frame(
+        household = rep(household, 24),
+        daily_avg = rep(NA, 24),
+        appliance = rep(a, 24),
+        hour = seq.int(24),
+        hour_avg = hour_avg
+      )
+    }
+    else {
+      if (a != "08") {
+        df <- get(paste0("p", household, "_", a))
+        hour_avg <-
+          rowMeans(aggregate(
+            df,
+            list(rep(
+              1:(nrow(df) %/% 3600 + 1),
+              each = 3600,
+              len = nrow(df)
+            )),
+            sum,
+            na.rm = TRUE,
+            na.action = NULL
+          )[-1]/ 3600000)
+        
+        
+        curr_a_power <- data.frame(
+          household = rep(household, 24),
+          daily_avg = rep(NA, 24),
+          appliance = rep(a, 24),
+          hour = seq.int(24),
+          hour_avg = hour_avg
+        )
+        
+      }
+      else {return(daily_power)}
+    }
+  
+  daily_power <- rbind(daily_power, curr_a_power)
+  
+  }
+  return(daily_power)
+}
+
+daily_power <-
+  bind_rows(lapply(households, daily_consum), .id = "column_label")
+
+```
+4. Daily total by 8 appliances of each household 
+```{r}
+daily_total_app <- daily_power %>% group_by(household) %>% 
+  summarise(sum_app=sum(hour_avg),
+            .groups = 'drop')
+
+daily_power$daily_avg <- daily_total_app$sum_app[match(unlist(daily_power$household), daily_total_app$household)]
+```
+4. Save the data
+```{r}
+write.csv(daily_power, "../data/daily_consum.csv", row.names=FALSE)
+
+```
+##### Smart meter data
+
+The steps and code below show the preparation of hourly total consumption (watt * time) for different phase data. 
+
+1. Read data
+```{r}
+## read data
+
+## 04 household
+# SMART METER DATA
+# ----------------
+#
+# Measurement period:
+# 27.06.12 to 31.01.13
+#
+# Coverage:
+# No. days: 219, Coverage: 99.39%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/04_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/04_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s04_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+## 05 household
+
+# SMART METER DATA
+# ----------------
+# 
+# Measurement period:
+# 27.06.12 to 31.01.13
+# 
+# Coverage:
+# No. days: 215, Coverage: 99.05%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/05_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/05_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s05_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+
+## 06 household
+
+# SMART METER DATA
+# ----------------
+# 
+# Measurement period:
+# 27.06.12 to 31.01.13
+# 
+# Coverage:
+# No. days: 166, Coverage: 99.67%
+
+
+file_list <-
+  list.files(
+    path = paste0("../../eco/06_sm"),
+    pattern = ".csv",
+    all.files = FALSE,
+    full.names = FALSE
+  )
+
+
+
+for (file in file_list) {
+  path <- paste0("../../eco/06_sm/", file)
+  
+  for (phase in 0:3) {
+    # if the merged dataset doesn't exist, create it
+    
+    ## initiate variable name for each phase
+    df_phase <- paste0("s06_", phase)
+    
+    if (!exists(df_phase)) {
+      temp <- read.csv(path, header = FALSE)
+      temp <- data.frame(temp[, phase + 1])
+      colnames(temp) <- substr(file, 1, 10)
+      assign(df_phase, temp)
+      rm(temp)
+      next
+    }
+    
+    # if the merged dataset does exist, append to it
+    if (exists(df_phase)) {
+      temp_dataset <- read.csv(path, header = FALSE)
+      temp_dataset <- data.frame(temp_dataset[, phase + 1])
+      colnames(temp_dataset) <- substr(file, 1, 10)
+      temp <- cbind(get(df_phase), temp_dataset)
+      assign(df_phase, temp)
+      rm(temp_dataset, temp)
+    }
+  }
+}
+```
+
+2. Replace negative values (missing values) as NA
+```{r}
+households <- c("04", "05", "06")
+
+for (household in households) {
+  for (phase in 0:3) {
+    df <- get(paste0("s", household, "_", phase))
+    df <- replace(df, df < 0, NA)
+    assign(paste0("s", household, "_", phase),df)
+    
+  }
+}
+```
+3. Compute 10min total consumption for each phase, kwh
+```{r}
+
+semihour_consum <- function(household) {
+  # create empty df for res
+  semihour <- data.frame(matrix(ncol = 3, nrow = 0))
+
+  #provide column names
+  colnames(semihour) <- c('household', 'phase', 'semihour_total')
+  
+  for (phase in 0:3) {
+    
+      df <- get(paste0("s", household, "_", phase))
+      
+      # daily_total <-
+      #   colSums(df,
+      #     na.rm = TRUE) / 3600000
+      
+      semihour_t <-
+        rowMeans(aggregate(
+          df,
+          list(rep(
+            1:(nrow(df) %/% 600 + 1),
+            each = 600,
+            len = nrow(df)
+          )),
+          sum,
+          na.rm = TRUE,
+          na.action = NULL
+        )[-1]/ 3600000)
+      
+      curr_consum <- data.frame(
+        household = rep(household, 144),
+        phase = rep(phase, 144),
+        semihour_total = semihour_t
+      )
+      semihour <- rbind(semihour, curr_consum)
+  }
+  
+  return(semihour)
+}
+
+semi_comsum <-
+  bind_rows(lapply(households, semihour_consum), .id = "column_label")
+
+```
+4. Save the data
+```{r}
+write.csv(semi_comsum, "../data/semihour_phase.csv", row.names=FALSE)
+
+```
+##### Plotly data
+
+The code below describes preparation of the Plotly visualization data. 
+
+```{r}
+## using smart meter data, the first 2 weeks of data
+
+ten_min_day <- function(household) {
+  
+  # create empty df for res
+  res <- data.frame(matrix(ncol = 5, nrow = 0))
+
+  #provide column names
+  colnames(res) <- c('household', 'phase', 'value','date','time')
+  
+  for (phase in 0:3) {
+    
+      df <- get(paste0("s", household, "_", phase))
+      df <- df[,1:14]
+      
+      # daily_total <-
+      #   colSums(df,
+      #     na.rm = TRUE) / 3600000
+      
+      ten_d <- aggregate(
+          df,
+          list(rep(
+            1:(nrow(df) %/% 600 + 1),
+            each = 600,
+            len = nrow(df)
+          )),
+          sum,
+          na.rm = TRUE,
+          na.action = NULL
+        )[-1]/ 3600000
+      ten_d$time <- format( seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date()+1), by = "10 min"),
+          "%H:%M", tz="GMT")[1:144]
+      
+      ## convert ten_d to long format
+      ten_d_long <- melt(setDT(ten_d), id.vars = "time", variable.name = "date")
+      
+      ten_d_long$household <- rep(household, 2016)
+      ten_d_long$phase <- rep(phase, 2016)
+      
+      res <- rbind(ten_d_long,res)
+  }
+    
+    
+    return(res)
+}
+
+ten_min_day <-
+  bind_rows(lapply(households, ten_min_day), .id = "column_label")
+```
+
+Save the data
+```{r}
+write.csv(ten_min_day[,2:6], "../data/ten_min_day.csv", row.names=FALSE)
+
+```
+
+### Results section
+
+The Plotly (@fig-altair) is used to generate the visualization of the first 14 days 10-minutes energy usage by different households and different phases. The Plotly drop-down and slider features can be used to filter households and the date. The drop-down menu of Plotly is more flexible compared to the dropdown filter in Altair. There are three households. The number of drop-down menu options can be anything, but better with less options other than more. The slider, on the other hand, can handle more traces. Thus, I used drop-down menu to filter the households, while the slider is the filter of 14 dates. I aggregated the secondly data to 10-minutes, so that the pattern is more obvious. Moreover, I included a spike line and tooltip making the comparison among phases and the total on the same time point easier. 
+
+The Altair (@fig-plotly) is used to generate the visualization of the comparison of total and individual appliance usage by household through out the day. I choose to use the combination of barplot-pie chart-barplot to show the interaction of different household can have different appliance usage at various time. When use select a household or all of the households in the first bar plot, the pie chart will show the  usage for that household/total usage by appliance. I also included a tooltip to show the daily total usage by those appliances. In this way, user can see how the appliance usage different from households. Moreover, I designed a second selection as the appliance. When user click the pie chart for particular appliance, the third chart, bar plot, shows the average hourly usage by selected appliance for that household. I have considered using a stacked barplot to combied the first two plots. However, I think either using the normalized bar plot or the standard stacked bar plot, there are some information lost. For example,  using normalized bar plot lost the sense of the comparison among total usage of different households, while using standard stacked bar plot making the comparison among appliance usage across different households hard. 
+
+
+### Visualizations
+
+```{python}
+import numpy as np
+import pandas as pd
+import altair as alt
+import datetime as dt
+import plotly.io as pio
+import plotly.express as px
+import plotly.offline as pyo
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+%matplotlib inline
+
+pio.renderers.default = "plotly_mimetype+notebook_connected"
+# pyo.init_notebook_mode()
+# import plotly.io as pio
+#pio.renderers.default = 'iframe_connected'
+```
+
+```{python}
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "last"
+```
+
+## Plotly with dropdown menu and slider
+dropdown menu as the households, and slider as the date (first 2 weeks of the data)
+
+```{python}
+#| echo: false
+## import data (processed by R)
+
+## ten-minus summary for each household each day smart meter data
+ten_min_day = pd.read_csv('../data/ten_min_day.csv')
+
+## formatting for later use
+ten_min_day['datetime'] = ten_min_day["date"] +"-"+ ten_min_day["time"]
+ten_min_day['date']= pd.to_datetime(ten_min_day['date'])
+ten_min_day['datetime']= pd.to_datetime(ten_min_day['datetime'])
+ten_min_day.info()
+```
+
+```{python}
+#| echo: false
+## add a column as daily total consumption
+#daily_tol = ten_min_day.groupby(['date','household']).agg({'value': 'sum'})['value']
+#ten_min_day = pd.merge(ten_min_day, daily_tol,  how='left', left_on=['date','household'], right_on = ['date','household'])
+#ten_min_day = ten_min_day.rename(columns={"value_x": "ten_mins", "value_y": "daily_tol"})
+ten_min_day.head()
+```
+
+```{python}
+#| label: fig-plotly
+#| fig-cap: "10-minutes energy consumption for first 14 days"
+
+# INITIALIZE GRAPH OBJECT
+fig = go.Figure(layout=dict(
+    legend=dict(groupclick="toggleitem")))
+
+# fig = make_subplots(rows=4, cols=1, vertical_spacing=0.065, shared_xaxes=True)
+
+# ADD TRACES: [c1*y1, c1*y2, c1*y3,..c2*y1, c2*y2,..]
+for house in pd.unique(ten_min_day.household):  # 3 household
+    for s in pd.unique(ten_min_day.date):  # 14 days
+
+        df1 = ten_min_day.loc[(ten_min_day['household'] == house) & (
+            ten_min_day['date'] == s)]
+        total_df = df1.loc[(df1['phase'] == 0)]
+        p1_df = df1.loc[(df1['phase'] == 1)]
+        p2_df = df1.loc[(df1['phase'] == 2)]
+        p3_df = df1.loc[(df1['phase'] == 3)]
+
+        fig.add_trace(
+            go.Scatter(x=list(total_df.time), y=list(round(total_df.value,3)), visible=False, name="Total",
+                       line=dict(color='red'),))
+        fig.add_trace(
+            go.Scatter(x=list(p1_df.time), y=list(round(p1_df.value,3)), visible=False, name="Phase 1",
+                       line=dict(color='blue')))
+        fig.add_trace(
+            go.Scatter(x=list(p2_df.time), y=list(round(p2_df.value,3)), visible=False, name="Phase 2",
+                       line=dict(color='green')))
+        fig.add_trace(
+            go.Scatter(x=list(p3_df.time), y=list(round(p3_df.value,3)), visible=False, name="Phase 3",
+                       line=dict(color='orange')))
+
+        # total 4*14*3 traces
+
+        # fig.add_trace(
+        #     go.Scatter(
+        #     visible=False,
+        #     line=dict(color="#00CED1", width=6),
+        #     name="Date : " + str(step),
+        #     x=pd.unique(ten_min_day.date),
+        #     y=ten_min_day.value))
+
+# Create and add slider
+steps = []
+
+# for each year and each continent
+
+for i in range(3*14):
+    label = [str(s) for s in ten_min_day['date'].dt.strftime(
+        '%Y-%m-%d(%a)').unique()]
+    step = dict(
+        method="update",
+        label=label[i % 14],
+        args=[{"visible": [False]*3*14*4},
+        {"title": "Daily total consumption: " + str("%.2f" % ten_min_day.groupby(['date','household']).agg({'value': 'sum'})['value'][i]) + " kW.h"}],
+        # layout attribute
+    )
+
+    step["args"][0]["visible"][i*4] = True
+    step["args"][0]["visible"][i*4+1] = True
+    step["args"][0]["visible"][i*4+2] = True
+    step["args"][0]["visible"][i*4+3] = True  # Toggle i'th trace to "visible"
+    steps.append(step)
+
+sliders = []
+
+for i in np.arange(0, 3*14, 14):
+    slider = [dict(
+        active=0,
+        currentvalue={"prefix": "Date: " },
+        pad={"t": 50},
+        steps=steps[i:i+14],
+
+
+    )]
+    sliders.append(slider)
+
+# INITIALIZE
+# MAKE FIRST TRACE VISABLE
+fig.data[0].visible = True
+fig.data[1].visible = True
+fig.data[2].visible = True
+fig.data[3].visible = True
+fig.update_layout(sliders=sliders[0])
+
+
+# ADD DROPDOWN TO CHANGE TYPE
+# "restyle": modify data or data attributes
+# "relayout": modify layout attributes
+# "update": modify data and layout attributes
+# "animate": start or pause an animation
+
+fig.update_layout(
+    title=dict(text="Smart power 10-mins usage by household",
+               font=dict(size=25), yref='paper'),
+    legend_title="Phase",
+    xaxis_title="Time",
+    yaxis_title="Energy consumption, kW.h",
+    plot_bgcolor="floralwhite",
+    showlegend=True,
+    hovermode='x'
+
+)
+fig.update_xaxes(tickangle=-45,
+                 showspikes=True,
+                 spikemode='across',
+                 spikesnap='cursor',
+                 showline=True,
+                 showgrid=True,
+                 spikethickness=1,
+                
+                 )
+# IMPORTANT WITH MULTIPLE ARGS YOU NEED EACH IN A DICTIONARY FOR SOME REASON
+fig.update_layout(
+
+    updatemenus=[
+        dict(
+            buttons=list([
+                dict(
+                    label="Household 04",
+                    method="update",
+                    args=[{"visible": [False]*0*4+[True]*4+[False]
+                           * (3*14-1)*4}, {"sliders": sliders[0]}],
+
+
+                ),
+                dict(
+                    label="Household 05",
+                    method="update",
+                    args=[{"visible": [False]*14*4+[True]*4+[False]
+                           * (3*14-1-14)*4}, {"sliders": sliders[1]}],
+                ),
+                dict(
+                    label="Household 06",
+                    method="update",
+                    args=[{"visible": [False]*28*4+[True]*4+[False]
+                           * (3*14-1-14*2)*4}, {"sliders": sliders[2]}],
+
+                )
+            ]),
+            direction="down",
+            showactive=True,
+            pad={"r": 10, "t": 10},
+            x=0.89,
+            xanchor="left",
+            y=1.2,
+            yanchor="auto",
+        
+        )
+    ]
+)
+# import plotly as plt
+fig.show(renderer="notebook_connected")
+# # Plot it and save as basic-line.html
+# plt.offline.plot(fig, filename = 'Test-1.html', auto_open = False)
+
+# # Show HTML
+# from IPython.display import HTML
+# HTML(filename='Test-1.html')
+```
+
+## Altair
+
+```{python}
+#| echo: false
+## import data
+## average hourly summary from all existing date by household for each applicance
+
+hourly_app = pd.read_csv('../data/daily_consum.csv')
+hourly_app.info()
+```
+
+```{python}
+#| echo: false
+hourly_app.head()
+```
+
+```{python}
+#| echo: false
+alt.data_transformers.enable('default', max_rows=None)
+```
+
+```{python}
+
+### first plot show the the average daily consumption 
+
+selection_bar = alt.selection_single(fields=['household'],name='House')
+color_bar = alt.condition(selection_bar,
+                      alt.value('sienna'),
+                      alt.value('lightgray'))
+
+bar=(alt.Chart(hourly_app)
+ .mark_bar(size=30)
+ .encode(y='daily_avg:Q',
+         x='household:N',
+         color=color_bar
+        )
+)
+
+text_bar = bar.mark_text(
+    align='center',
+    baseline='bottom',
+    dx=1  # Nudges text to right so it doesn't appear on top of the bar
+).encode(
+    text=alt.Text("daily_avg:Q", format=",.2f")
+)
+
+
+bar.title =["Daily average energy consumption","by household"]
+bar.encoding.x.title = 'Households'
+bar.encoding.y.title = 'Daily consumption, kW.h'
+#(bar + text_bar).properties(width=200).add_selection(selection_bar)
+```
+
+```{python}
+# pie chart to see the appliance use percentage
+
+selection_app = alt.selection_single(encodings=['theta','color'],name='app')
+selection_app1 = alt.selection_single(fields=['appliance_name'],name='app1')
+# color_app = alt.condition(selection_app,
+#                       'appliance_name',
+#                       alt.value('lightgray'))
+opacity_app = alt.condition(selection_app, alt.value(1.0), alt.value(0.2))
+
+base = alt.Chart(hourly_app).transform_filter(selection_bar
+).encode(
+    theta=alt.Theta("usage:Q", stack=True), 
+    color=alt.Color('appliance_name:N', legend=None),
+    opacity=opacity_app,
+    tooltip='combined_tooltip:N',
+).transform_aggregate(
+    usage = 'sum(hour_avg)',
+    groupby=["appliance_name"]
+    
+).transform_calculate(
+    round_usage = 'round(datum.usage*1000)/1000',
+    combined_tooltip = "'Usage: ' + datum.round_usage + ' kW.h'"
+    )
+
+pie = base.mark_arc(outerRadius=120)
+text_pie = base.mark_text(baseline="bottom",radius=120, size=12,lineBreak=" ",radiusOffset=22
+            ).encode(text="appliance_name:N"
+            )
+
+# pie plot title
+pie.title =["Usage by appliances"]
+
+#(bar + text_bar).properties(width=200,height=310).add_selection(selection_bar) | (pie + text_pie).properties(height=310).add_selection(selection_app).add_selection(selection_app1)
+```
+
+```{python}
+#| label: fig-altair
+#| fig-cap: "Appliance usage distribution by households"
+
+## barplot show usage for every hour
+
+color_hour = alt.condition(selection_app,
+                      alt.Color('appliance_name:N'),
+#                       alt.value('steelblue'),
+                      alt.value('lightgray'))
+
+bar_hour=(alt.Chart(hourly_app)
+ .mark_bar()
+ .transform_filter(selection_bar
+ ).transform_filter(selection_app1)
+ ).encode(x=alt.X('hour:N'),
+         y=alt.Y('hour_avg:Q'),
+         color=alt.Color('appliance_name:N', legend=None)
+        
+        )
+
+
+bar_hour.title ="Appliance energy consumption"
+bar_hour.encoding.x.title = 'Hour'
+bar_hour.encoding.y.title = 'Energy consumption, kW.h'
+
+(bar + text_bar).properties(width=200,height=310).add_selection(selection_bar) | (pie + text_pie).properties(height=310).add_selection(selection_app).add_selection(selection_app1) | bar_hour.properties(height=310)
+```
+
+
+

@@ -19,7 +19,7 @@ library(dplyr)
 library(data.table)
 ```
 
-# Plot data
+# Plug data
 ## Daily average consumption by household
 1. Read data
 ```{r}
