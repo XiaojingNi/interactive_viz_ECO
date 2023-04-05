@@ -907,7 +907,6 @@ import plotly.offline as pyo
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-%matplotlib inline
 
 pio.renderers.default = "plotly_mimetype+notebook_connected"
 # pyo.init_notebook_mode()
@@ -915,12 +914,8 @@ pio.renderers.default = "plotly_mimetype+notebook_connected"
 #pio.renderers.default = 'iframe_connected'
 ```
 
-```{python}
-from IPython.core.interactiveshell import InteractiveShell
-InteractiveShell.ast_node_interactivity = "last"
-```
 
-## Plotly with dropdown menu and slider
+#### Plotly with dropdown menu and slider
 dropdown menu as the households, and slider as the date (first 2 weeks of the data)
 
 ```{python}
@@ -936,9 +931,8 @@ ten_min_day['date']= pd.to_datetime(ten_min_day['date'])
 ten_min_day['datetime']= pd.to_datetime(ten_min_day['datetime'])
 ten_min_day.info()
 ```
-
 ```{python}
-#| echo: false
+
 ## add a column as daily total consumption
 #daily_tol = ten_min_day.groupby(['date','household']).agg({'value': 'sum'})['value']
 #ten_min_day = pd.merge(ten_min_day, daily_tol,  how='left', left_on=['date','household'], right_on = ['date','household'])
@@ -949,6 +943,7 @@ ten_min_day.head()
 ```{python}
 #| label: fig-plotly
 #| fig-cap: "10-minutes energy consumption for first 14 days"
+
 
 # INITIALIZE GRAPH OBJECT
 fig = go.Figure(layout=dict(
@@ -1099,10 +1094,13 @@ fig.update_layout(
         )
     ]
 )
+
+fig.show()
 # import plotly as plt
-fig.show(renderer="notebook_connected")
+#fig.show(renderer="notebook_connected")
 # # Plot it and save as basic-line.html
 # plt.offline.plot(fig, filename = 'Test-1.html', auto_open = False)
+
 
 # # Show HTML
 # from IPython.display import HTML
@@ -1227,5 +1225,6 @@ bar_hour.encoding.y.title = 'Energy consumption, kW.h'
 (bar + text_bar).properties(width=200,height=310).add_selection(selection_bar) | (pie + text_pie).properties(height=310).add_selection(selection_app).add_selection(selection_app1) | bar_hour.properties(height=310)
 ```
 
+## Reference
 
 

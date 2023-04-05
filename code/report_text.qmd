@@ -1,0 +1,42 @@
+---
+title: "Report"
+author: "Xiaojing Ni"
+format:
+    html:
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-fold: true
+        code-line-numbers: true
+        toc: true
+        toc-depth: 4
+        link-external-icon: true
+        link-external-newwindow: true
+        bibliography: bibliography.bib
+---
+### Data section
+
+The data in this report is the Electricity Consumption and Occupancy (ECO) dataset (@Beckel2014, @Kleiminger2015). This dataset contains two parts: plug data and smart meter data. The plug data describes the energy consumption by second for each day by various appliances. The smart meter data is the energy consumption measured by three-phase smart meter for entire household. There are three households in the dataset: 04, 05, and 06. This report will show the household usage similarity and differences over a day, including the total usage and by different appliances. Thus, the households and their related total and average usage by hour from both plug data and smart meter data will be used in this report. 
+
+More specifically, the plug dataset is used to calculate the average 10-minutes usage for the first 14 days in the dataset. The usage from different household and different phase is recorded. The smart meter dataset is used to obtain the hourly usage averaged by all date in the dataset grouping by households and appliances. 
+
+### Data-science questions
+
+The main question is household usages similarity and differences over a day. This report is a demonstration to show how usage can be similar or different by households. If there are large scale household data, this will help to understand the overall usage pattern, so that utility provider can make plans for the adjustment when necessary, i.e. utility distribution during the peak hour. 
+
+More specific questions related to the individual visualizations are described as follow. 
+<ul>
+<li> How similar/difference is the average usage distributed by time for different households? For example, is there any peak time that usage from all households are high? 
+<li> How similar/difference is the average usage by appliances by different households throughout the day? 
+
+### Data preparation and EDA
+
+### Results section
+
+The Plotly is used to generate the visualization of the first 14 days 10-minutes energy usage by different households and different phases. The Plotly drop-down and slider features can be used to filter households and the date. The drop-down menu of Plotly is more flexible compared to the dropdown filter in Altair. There are three households. The number of drop-down menu options can be anything, but better with less options other than more. The slider, on the other hand, can handle more traces. Thus, I used drop-down menu to filter the households, while the slider is the filter of 14 dates. I aggregated the secondly data to 10-minutes, so that the pattern is more obvious. Moreover, I included a spike line and tooltip making the comparison among phases and the total on the same time point easier. 
+
+The Altair is used to generate the visualization of the comparison of total and individual appliance usage by household through out the day. I choose to use the combination of barplot-pie chart-barplot to show the interaction of different household can have different appliance usage at various time. When use select a household or all of the households in the first bar plot, the pie chart will show the  usage for that household/total usage by appliance. I also included a tooltip to show the daily total usage by those appliances. In this way, user can see how the appliance usage different from households. Moreover, I designed a second selection as the appliance. When user click the pie chart for particular appliance, the third chart, bar plot, shows the average hourly usage by selected appliance for that household. I have considered using a stacked barplot to combied the first two plots. However, I think either using the normalized bar plot or the standard stacked bar plot, there are some information lost. For example,  using normalized bar plot lost the sense of the comparison among total usage of different households, while using standard stacked bar plot making the comparison among appliance usage across different households hard. 
+
+
+### Visualizations
+: Include the final products for your visualizations
